@@ -1,0 +1,163 @@
+{
+  "test_start": "2025-11-01",
+  "test_end": "2026-10-30",
+  "test_days": 364,
+  "lear_mean_selected_features": 67.89114010989012,
+  "lear_features_available": 248,
+  "test_mean_price": 110.88934123168497,
+  "test_price_std": 65.72129064200463,
+  "test_negative_hours": 452,
+  "metrics": [
+    {
+      "model": "Naive",
+      "MAE": 33.61561240842491,
+      "RMSE": 52.59953438424462,
+      "sMAPE_pct": 46.31526232378164,
+      "rMAE": 1.0
+    },
+    {
+      "model": "LEAR",
+      "MAE": 16.32033348429865,
+      "RMSE": 26.923942018700217,
+      "sMAPE_pct": 27.063367335563637,
+      "rMAE": 0.48549862147412104
+    },
+    {
+      "model": "GBM",
+      "MAE": 15.99015630367424,
+      "RMSE": 27.76082341435363,
+      "sMAPE_pct": 27.59279721763368,
+      "rMAE": 0.47567648357543263
+    },
+    {
+      "model": "Ensemble",
+      "MAE": 14.334978727316075,
+      "RMSE": 24.714894536899166,
+      "sMAPE_pct": 25.12382971482599,
+      "rMAE": 0.42643812503393136
+    }
+  ],
+  "bess": [
+    {
+      "battery": "1h",
+      "model": "Perfect foresight",
+      "profit_eur_per_mw": 44610.610485402736,
+      "pct_of_perfect": 100.0,
+      "cycles": 363.9999999999999,
+      "loss_days": 0
+    },
+    {
+      "battery": "1h",
+      "model": "Naive",
+      "profit_eur_per_mw": 39297.89469183728,
+      "pct_of_perfect": 88.0909143906384,
+      "cycles": 363.9999999999999,
+      "loss_days": 8
+    },
+    {
+      "battery": "1h",
+      "model": "LEAR",
+      "profit_eur_per_mw": 42813.155767783814,
+      "pct_of_perfect": 95.97079103365537,
+      "cycles": 362.99999999999994,
+      "loss_days": 0
+    },
+    {
+      "battery": "1h",
+      "model": "GBM",
+      "profit_eur_per_mw": 42431.0395575663,
+      "pct_of_perfect": 95.11423200866165,
+      "cycles": 363.9999999999999,
+      "loss_days": 3
+    },
+    {
+      "battery": "1h",
+      "model": "Ensemble",
+      "profit_eur_per_mw": 43054.65656340245,
+      "pct_of_perfect": 96.5121438485819,
+      "cycles": 362.99999999999994,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "Perfect foresight",
+      "profit_eur_per_mw": 84874.26180097298,
+      "pct_of_perfect": 100.0,
+      "cycles": 363.93808315196475,
+      "loss_days": 0
+    },
+    {
+      "battery": "2h",
+      "model": "Naive",
+      "profit_eur_per_mw": 75174.59877284226,
+      "pct_of_perfect": 88.57172619553845,
+      "cycles": 363.93808315196475,
+      "loss_days": 12
+    },
+    {
+      "battery": "2h",
+      "model": "LEAR",
+      "profit_eur_per_mw": 82014.09368268968,
+      "pct_of_perfect": 96.63011134636989,
+      "cycles": 363.00000000000006,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "GBM",
+      "profit_eur_per_mw": 81841.31670052266,
+      "pct_of_perfect": 96.42654317564202,
+      "cycles": 364.00000000000017,
+      "loss_days": 2
+    },
+    {
+      "battery": "2h",
+      "model": "Ensemble",
+      "profit_eur_per_mw": 82530.90931627249,
+      "pct_of_perfect": 97.23903049643535,
+      "cycles": 363.00000000000006,
+      "loss_days": 1
+    },
+    {
+      "battery": "4h",
+      "model": "Perfect foresight",
+      "profit_eur_per_mw": 146715.1929445666,
+      "pct_of_perfect": 100.0,
+      "cycles": 362.0762204161348,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "Naive",
+      "profit_eur_per_mw": 132299.91970577324,
+      "pct_of_perfect": 90.17465543310168,
+      "cycles": 362.30869783725467,
+      "loss_days": 12
+    },
+    {
+      "battery": "4h",
+      "model": "LEAR",
+      "profit_eur_per_mw": 143023.3716261646,
+      "pct_of_perfect": 97.48368165265823,
+      "cycles": 359.6280557103271,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "GBM",
+      "profit_eur_per_mw": 142380.89404165774,
+      "pct_of_perfect": 97.04577364080727,
+      "cycles": 362.287377765619,
+      "loss_days": 3
+    },
+    {
+      "battery": "4h",
+      "model": "Ensemble",
+      "profit_eur_per_mw": 143578.25956889984,
+      "pct_of_perfect": 97.86188920676265,
+      "cycles": 360.9331100153,
+      "loss_days": 1
+    }
+  ],
+  "runtime_s": 397.0498106479645
+}
