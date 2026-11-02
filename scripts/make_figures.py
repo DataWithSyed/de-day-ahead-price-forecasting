@@ -68,4 +68,32 @@ if imp_p.exists():
     ax[1].barh(imp.index, imp.values, color=COL["GBM"]); ax[1].set_xlabel("MAE increase when permuted (EUR/MWh)")
     ax[1].set_title("GBM permutation importance (last fitted model on the test period; partly in-sample)", fontsize=9)
 fig.tight_layout(); fig.savefig(FIG / "03_bess_duration_importance.png"); plt.close()
+
+# 4. quarter-hour extension (scripts/run_quarterhour.py)
+if (RES / "qh_bess_value.csv").exists():
+    qv = pd.read_csv(RES / "qh_bess_value.csv"); prof = pd.read_csv(RES / "qh_mean_intrahour_deviation.csv", index_col=0)
+    fig, ax = plt.subplots(1, 3, figsize=(15, 4.2), gridspec_kw={"width_ratios": [1.2, 1.4, 1]})
+    t = np.arange(96) / 4
+    ax[0].bar(t, prof.to_numpy().ravel(), width=0.23, color="#1f5f8b")
+    ax[0].set_xlabel("local hour of delivery day"); ax[0].set_ylabel("EUR/MWh vs hourly mean")
+    ax[0].set_title("Mean 15-min price minus its hourly mean, test year", fontsize=9)
+    b2 = qv[qv.battery == "2h"]
+    order = ["Naive", "LEAR", "GBM", "Ensemble", "Perfect foresight"]
+    x = np.arange(len(order)); w = 0.38
+    h = [b2[(b2.model == m) & (b2.strategy == "hourly")].profit_eur_per_mw.iloc[0] / 1e3 for m in order]
+    sh = [b2[(b2.model == m) & (b2.strategy == "hourly + ex-ante shape")].profit_eur_per_mw.iloc[0] / 1e3 for m in order]
+    pfq = b2[(b2.model == "Perfect foresight") & (b2.strategy == "15-min")].profit_eur_per_mw.iloc[0] / 1e3
+    ax[1].bar(x - w / 2, h, w, color="#9a9a9a", label="hourly schedule")
+    ax[1].bar(x + w / 2, sh, w, color="#4c9a6a", label="15-min schedule: hourly forecast + ex-ante shape")
+    ax[1].axhline(pfq, color="k", ls="--", lw=1, label=f"perfect foresight on 15-min prices ({pfq:.1f})")
+    for i in range(len(order)):
+        ax[1].text(x[i] + w / 2, sh[i] + 0.4, f"+{sh[i] - h[i]:.1f}", ha="center", fontsize=7)
+    ax[1].set_xticks(x); ax[1].set_xticklabels(order, fontsize=7); ax[1].set_ylim(70, pfq + 6)
+    ax[1].set_ylabel("k EUR per MW, settled on actual 15-min prices"); ax[1].legend(fontsize=7, loc="upper left")
+    ax[1].set_title("1 MW / 2 MWh BESS: value of scheduling in 15-min steps", fontsize=9)
+    piv = qv[qv.model == "Ensemble"].pivot(index="battery", columns="strategy", values="pct_of_pf_15min")
+    piv[["hourly", "hourly + ex-ante shape"]].plot.bar(ax=ax[2], color=["#9a9a9a", "#4c9a6a"], rot=0)
+    ax[2].set_ylim(80, 100); ax[2].set_ylabel("% of 15-min perfect-foresight profit"); ax[2].set_xlabel("battery duration (1 MW)")
+    ax[2].set_title("Ensemble forecast, by duration", fontsize=9); ax[2].legend(fontsize=7, loc="upper left")
+    fig.tight_layout(); fig.savefig(FIG / "04_quarter_hour_value.png"); plt.close()
 print("figures written")

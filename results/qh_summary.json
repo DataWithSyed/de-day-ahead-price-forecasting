@@ -1,0 +1,427 @@
+{
+  "test_days": 364,
+  "shape_window_days": 28,
+  "shape_r2_intrahour": 0.4794808568584329,
+  "intrahour_dev_std": 13.95634277969998,
+  "intrahour_dev_mean_abs": 7.79905056662088,
+  "accuracy": [
+    {
+      "model": "Naive",
+      "qh_forecast": "flat",
+      "MAE_15min": 34.902994791666664,
+      "RMSE_15min": 54.419540985390114
+    },
+    {
+      "model": "Naive",
+      "qh_forecast": "shaped",
+      "MAE_15min": 34.162982128548535,
+      "RMSE_15min": 53.55458334902354
+    },
+    {
+      "model": "LEAR",
+      "qh_forecast": "flat",
+      "MAE_15min": 18.711810611263736,
+      "RMSE_15min": 30.32623889281242
+    },
+    {
+      "model": "LEAR",
+      "qh_forecast": "shaped",
+      "MAE_15min": 17.374835744333794,
+      "RMSE_15min": 28.745220855141884
+    },
+    {
+      "model": "GBM",
+      "qh_forecast": "flat",
+      "MAE_15min": 18.329603823260072,
+      "RMSE_15min": 31.071566727011177
+    },
+    {
+      "model": "GBM",
+      "qh_forecast": "shaped",
+      "MAE_15min": 17.105746208218864,
+      "RMSE_15min": 29.53047943224193
+    },
+    {
+      "model": "Ensemble",
+      "qh_forecast": "flat",
+      "MAE_15min": 16.926435611263738,
+      "RMSE_15min": 28.383211527685575
+    },
+    {
+      "model": "Ensemble",
+      "qh_forecast": "shaped",
+      "MAE_15min": 15.5211487880609,
+      "RMSE_15min": 26.687331325036958
+    },
+    {
+      "model": "Naive 15-min",
+      "qh_forecast": "native",
+      "MAE_15min": 34.03399353250916,
+      "RMSE_15min": 53.90237558251891
+    },
+    {
+      "model": "Perfect hourly",
+      "qh_forecast": "flat",
+      "MAE_15min": 7.799144345238093,
+      "RMSE_15min": 13.956349660984463
+    },
+    {
+      "model": "Perfect hourly",
+      "qh_forecast": "shaped",
+      "MAE_15min": 5.166143604767627,
+      "RMSE_15min": 10.069093925801692
+    }
+  ],
+  "bess": [
+    {
+      "battery": "1h",
+      "model": "Perfect foresight",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 48436.12961536845,
+      "pct_of_pf_15min": 100.0,
+      "cycles": 363.9999999999999,
+      "loss_days": 0
+    },
+    {
+      "battery": "1h",
+      "model": "Perfect foresight",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 44608.45924857531,
+      "pct_of_pf_15min": 92.09748921478926,
+      "cycles": 363.9999999999999,
+      "loss_days": 0
+    },
+    {
+      "battery": "1h",
+      "model": "Perfect foresight",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 46011.40450993927,
+      "pct_of_pf_15min": 94.9939742818348,
+      "cycles": 363.99999999999994,
+      "loss_days": 0
+    },
+    {
+      "battery": "1h",
+      "model": "Naive 15-min",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 41081.331980526404,
+      "pct_of_pf_15min": 84.81547205929431,
+      "cycles": 363.9999999999999,
+      "loss_days": 11
+    },
+    {
+      "battery": "1h",
+      "model": "Naive",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 39329.69953902566,
+      "pct_of_pf_15min": 81.19909631785819,
+      "cycles": 363.9999999999999,
+      "loss_days": 8
+    },
+    {
+      "battery": "1h",
+      "model": "Naive",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 40180.484115552346,
+      "pct_of_pf_15min": 82.95560449322804,
+      "cycles": 363.99999999999994,
+      "loss_days": 8
+    },
+    {
+      "battery": "1h",
+      "model": "LEAR",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 42723.06695757304,
+      "pct_of_pf_15min": 88.20495629365338,
+      "cycles": 362.99999999999994,
+      "loss_days": 1
+    },
+    {
+      "battery": "1h",
+      "model": "LEAR",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 44146.956321986865,
+      "pct_of_pf_15min": 91.14468202261013,
+      "cycles": 363.9999999999999,
+      "loss_days": 1
+    },
+    {
+      "battery": "1h",
+      "model": "GBM",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 42417.67876074819,
+      "pct_of_pf_15min": 87.57445959779857,
+      "cycles": 363.9999999999999,
+      "loss_days": 4
+    },
+    {
+      "battery": "1h",
+      "model": "GBM",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 44177.77405148999,
+      "pct_of_pf_15min": 91.20830752231012,
+      "cycles": 363.9999999999999,
+      "loss_days": 1
+    },
+    {
+      "battery": "1h",
+      "model": "Ensemble",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 42995.73268967347,
+      "pct_of_pf_15min": 88.76789502196561,
+      "cycles": 362.99999999999994,
+      "loss_days": 2
+    },
+    {
+      "battery": "1h",
+      "model": "Ensemble",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 44693.49428160836,
+      "pct_of_pf_15min": 92.2730503789622,
+      "cycles": 363.9999999999999,
+      "loss_days": 0
+    },
+    {
+      "battery": "2h",
+      "model": "Perfect foresight",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 89802.8981170317,
+      "pct_of_pf_15min": 100.0,
+      "cycles": 364.00000000000017,
+      "loss_days": 0
+    },
+    {
+      "battery": "2h",
+      "model": "Perfect foresight",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 84671.36045405336,
+      "pct_of_pf_15min": 94.28577721813511,
+      "cycles": 363.93808315196475,
+      "loss_days": 0
+    },
+    {
+      "battery": "2h",
+      "model": "Perfect foresight",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 87083.4776228836,
+      "pct_of_pf_15min": 96.97178982953965,
+      "cycles": 364.00000000000017,
+      "loss_days": 0
+    },
+    {
+      "battery": "2h",
+      "model": "Naive 15-min",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 78433.9165958408,
+      "pct_of_pf_15min": 87.34007280436009,
+      "cycles": 364.00000000000017,
+      "loss_days": 9
+    },
+    {
+      "battery": "2h",
+      "model": "Naive",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 75059.26679444526,
+      "pct_of_pf_15min": 83.5822321642978,
+      "cycles": 363.93808315196475,
+      "loss_days": 12
+    },
+    {
+      "battery": "2h",
+      "model": "Naive",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 77267.27612099334,
+      "pct_of_pf_15min": 86.04096052701789,
+      "cycles": 364.00000000000017,
+      "loss_days": 8
+    },
+    {
+      "battery": "2h",
+      "model": "LEAR",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 81950.27362652161,
+      "pct_of_pf_15min": 91.25571150245452,
+      "cycles": 363.00000000000006,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "LEAR",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 84324.07535123188,
+      "pct_of_pf_15min": 93.89905795839708,
+      "cycles": 363.63427213115807,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "GBM",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 81786.84896031348,
+      "pct_of_pf_15min": 91.07372999669604,
+      "cycles": 364.00000000000017,
+      "loss_days": 2
+    },
+    {
+      "battery": "2h",
+      "model": "GBM",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 84142.12633901261,
+      "pct_of_pf_15min": 93.69644867068551,
+      "cycles": 364.00000000000017,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "Ensemble",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 82541.6459420501,
+      "pct_of_pf_15min": 91.91423403115712,
+      "cycles": 363.00000000000006,
+      "loss_days": 1
+    },
+    {
+      "battery": "2h",
+      "model": "Ensemble",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 85098.89124278138,
+      "pct_of_pf_15min": 94.76185404604645,
+      "cycles": 364.00000000000017,
+      "loss_days": 1
+    },
+    {
+      "battery": "4h",
+      "model": "Perfect foresight",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 153213.0742919858,
+      "pct_of_pf_15min": 100.0,
+      "cycles": 363.72959081143495,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "Perfect foresight",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 146030.39668522496,
+      "pct_of_pf_15min": 95.31196822467484,
+      "cycles": 362.076220416135,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "Perfect foresight",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 150499.54902520112,
+      "pct_of_pf_15min": 98.22892055438209,
+      "cycles": 363.7669009367973,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "Naive 15-min",
+      "strategy": "15-min",
+      "profit_eur_per_mw": 136648.80116741767,
+      "pct_of_pf_15min": 89.18873392423366,
+      "cycles": 363.72959081143495,
+      "loss_days": 9
+    },
+    {
+      "battery": "4h",
+      "model": "Naive",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 131619.63404179842,
+      "pct_of_pf_15min": 85.90626788870792,
+      "cycles": 362.3086978372548,
+      "loss_days": 12
+    },
+    {
+      "battery": "4h",
+      "model": "Naive",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 135286.58168631158,
+      "pct_of_pf_15min": 88.29963259433669,
+      "cycles": 363.62032544430275,
+      "loss_days": 7
+    },
+    {
+      "battery": "4h",
+      "model": "LEAR",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 142351.91432331884,
+      "pct_of_pf_15min": 92.91107497264345,
+      "cycles": 359.6280557103274,
+      "loss_days": 0
+    },
+    {
+      "battery": "4h",
+      "model": "LEAR",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 146918.79509236803,
+      "pct_of_pf_15min": 95.89181326156118,
+      "cycles": 362.3380129357537,
+      "loss_days": 2
+    },
+    {
+      "battery": "4h",
+      "model": "GBM",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 141824.5159764398,
+      "pct_of_pf_15min": 92.5668495536861,
+      "cycles": 362.2873777656192,
+      "loss_days": 2
+    },
+    {
+      "battery": "4h",
+      "model": "GBM",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 146273.33164866327,
+      "pct_of_pf_15min": 95.47052842886167,
+      "cycles": 363.5504135694041,
+      "loss_days": 2
+    },
+    {
+      "battery": "4h",
+      "model": "Ensemble",
+      "strategy": "hourly",
+      "profit_eur_per_mw": 142987.47356870686,
+      "pct_of_pf_15min": 93.32589547560967,
+      "cycles": 360.9331100153002,
+      "loss_days": 1
+    },
+    {
+      "battery": "4h",
+      "model": "Ensemble",
+      "strategy": "hourly + ex-ante shape",
+      "profit_eur_per_mw": 147592.13328382777,
+      "pct_of_pf_15min": 96.33129154666923,
+      "cycles": 363.36324130050986,
+      "loss_days": 2
+    }
+  ],
+  "window_sensitivity": [
+    {
+      "window_days": 7,
+      "profit_eur_per_mw": 85318.5996880373,
+      "MAE_15min": 15.521411987751833,
+      "shape_r2": 0.5009388293701469
+    },
+    {
+      "window_days": 14,
+      "profit_eur_per_mw": 85052.4480626774,
+      "MAE_15min": 15.501641251001605,
+      "shape_r2": 0.4955867469921471
+    },
+    {
+      "window_days": 28,
+      "profit_eur_per_mw": 85098.89124278138,
+      "MAE_15min": 15.5211487880609,
+      "shape_r2": 0.4794808568584329
+    },
+    {
+      "window_days": 56,
+      "profit_eur_per_mw": 84757.69554337328,
+      "MAE_15min": 15.637969268687039,
+      "shape_r2": 0.4391264308361378
+    }
+  ]
+}
