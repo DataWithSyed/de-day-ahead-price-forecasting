@@ -65,6 +65,32 @@ def build_dataset(years=(2023, 2024, 2025, 2026), last_day: str = "2026-10-30",
     return df
 
 
+def fetch_qh_prices(start: str = "2025-10-01", end: str = "2026-10-30",
+                    out: Path | str = "data/de_lu_qh_price.csv.gz") -> pd.Series:
+    """Native 15-minute DE-LU day-ahead prices (SDAC 15-min MTU since delivery day 1 Oct 2025), UTC index.
+
+    Fetched in two halves to stay well inside the API's per-request size; not resampled."""
+    mid = (pd.Timestamp(start) + (pd.Timestamp(end) - pd.Timestamp(start)) / 2).strftime("%Y-%m-%d")
+    parts = []
+    for a, b in ((start, mid), ((pd.Timestamp(mid) + pd.Timedelta(days=1)).strftime("%Y-%m-%d"), end)):
+        p = _get("price", {"bzn": "DE-LU", "start": a, "end": b})
+        parts.append(pd.Series(p["price"], index=pd.to_datetime(p["unix_seconds"], unit="s", utc=True),
+                               name="price", dtype="float64"))
+    s = pd.concat(parts).sort_index()
+    s = s[~s.index.duplicated()]
+    s.index.name = "time_utc"
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    s.round(2).to_csv(out, compression="gzip")
+    return s
+
+
+def load_qh_prices(path: Path | str = "data/de_lu_qh_price.csv.gz") -> pd.Series:
+    s = pd.read_csv(path, index_col=0, parse_dates=True)["price"]
+    s.index = pd.to_datetime(s.index, utc=True)
+    return s
+
+
 def load_dataset(path: Path | str = "data/de_lu_hourly.csv.gz") -> pd.DataFrame:
     df = pd.read_csv(path, index_col=0, parse_dates=True)
     df.index = pd.to_datetime(df.index, utc=True)
