@@ -26,6 +26,28 @@ Test period: mean price 110.9 EUR/MWh, standard deviation 65.7 EUR/MWh, 452 nega
 
 ![bess and importance](figures/03_bess_duration_importance.png)
 
+## Extension: quarter-hour prices (15-min MTU) and what an hourly model leaves on the table
+
+Since delivery day 1 Oct 2025 the day-ahead auction clears **96 quarter-hour prices per day**, so the whole test year is 15-minute. The models above forecast hourly averages. `scripts/run_quarterhour.py` downloads the native 15-min DE-LU prices and asks two questions: how much more can a battery earn by scheduling in 15-minute steps, and how much of that is reachable from the *hourly* forecasts plus an **ex-ante intra-hour shape** (the median deviation of each quarter from its hourly mean over the previous 28 delivery days, all published before D's gate closure, re-centred to sum to zero within each hour). Every schedule is optimised on D-1 information and settled on the actual 15-min prices; same battery assumptions as above, LP in 0.25 h steps.
+
+| 1 MW battery, k EUR/MW over the test year (% of 15-min perfect foresight) | 1 h | 2 h | 4 h |
+|---|---|---|---|
+| Perfect foresight, 15-min schedule (upper bound) | 48.4 (100 %) | **89.8** (100 %) | 153.2 (100 %) |
+| Perfect foresight, hourly schedule | 44.6 (92.1 %) | 84.7 (94.3 %) | 146.0 (95.3 %) |
+| Ensemble, hourly schedule (main backtest) | 43.0 (88.8 %) | 82.5 (91.9 %) | 143.0 (93.3 %) |
+| **Ensemble + ex-ante shape, 15-min schedule** | **44.7 (92.3 %)** | **85.1 (94.8 %)** | **147.6 (96.3 %)** |
+| Naive rule applied directly to 15-min prices | 41.1 (84.8 %) | 78.4 (87.3 %) | 136.6 (89.2 %) |
+
+**Findings**
+1. **Hourly scheduling forgoes 4.7-7.9 % of the value even with perfect foresight**: +3.8, +5.1 and +7.2 k EUR/MW/yr for the 1 h, 2 h and 4 h battery. Within-hour deviations are large and systematic (mean absolute 7.8 EUR/MWh): prices fall across the four quarters of the late-morning hours (08-11 local, solar ramping up) and rise across those of the afternoon hours (14-19, solar ramping down); in the 17:00 hour the last quarter averages 44 EUR/MWh above the first (left panel below).
+2. **A 28-day median shape, with no new model, recovers 44 % (1 h), 50 % (2 h) and 64 % (4 h) of that uplift** for the ensemble (+1.7, +2.6, +4.6 k EUR/MW/yr). The shaped 2 h ensemble schedule earns more (85.1 k) than an hourly schedule with *perfect* hourly prices (84.7 k).
+3. The shape explains **48 % of the intra-hour price variance** out of sample and cuts the ensemble's 15-min MAE from 16.9 to 15.5 EUR/MWh. Window length matters little (7 to 56 days: 84.8 to 85.3 k EUR/MW for the 2 h battery, `results/qh_shape_window_sensitivity.csv`).
+4. The remaining gap to the 15-min bound (4.7 k for the 2 h battery) is the part of the intra-hour pattern that changes day to day; a native 15-min model would be needed for it.
+
+The hourly-schedule rows here are settled on the actual 15-min prices; they match the main backtest to within 0.5 % (the difference comes from the interpolated hour of the spring DST day and the hourly averaging in the extract).
+
+![quarter-hour value](figures/04_quarter_hour_value.png)
+
 ## Problem
 A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET on D-1) needs a 24-hour price forecast for day D. How good can a transparent, open-data model get, and how much of the perfect-foresight arbitrage value does a battery keep when it commits to a schedule based on that forecast?
 
@@ -48,22 +70,25 @@ A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-bash scripts/run_all.sh             # backtest (~7 min on 8 cores), figures, tests; uses data/de_lu_hourly.csv.gz
+bash scripts/run_all.sh             # backtest (~7 min on 8 cores), 15-min extension (~1 min), figures, tests
 bash scripts/run_all.sh --download  # refresh the data extract from the Energy-Charts API first
-python -m pytest -q                 # 19 tests
+python -m pytest -q                 # 24 tests
 ```
-Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
+Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`; `qh_*.csv` and `qh_summary.json` for the 15-min extension) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
 
 ```
 src/dapf/      data.py (API download + cache), features.py (DST-safe panel, holidays, ex-ante designs),
-               models.py (naive, LEAR, GBM), evaluate.py (metrics, DM test), bess.py (LP + forecast-driven backtest)
-scripts/       fetch_data.py, run_backtest.py, make_figures.py, run_all.sh
-tests/         19 pytest tests: DST handling, ex-ante features, holidays, metrics, DM test, LEAR sparsity, LP physics
+               models.py (naive, LEAR, GBM), evaluate.py (metrics, DM test), bess.py (LP in any time step + backtest),
+               quarterhour.py (15-min DST-safe panel, ex-ante intra-hour shape)
+scripts/       fetch_data.py, run_backtest.py, run_quarterhour.py, make_figures.py, run_all.sh
+tests/         24 pytest tests: DST handling, ex-ante features and shape, holidays, metrics, DM test, LEAR sparsity,
+               LP physics, 15-min LP = hourly LP on flat prices, 15-min extract consistent with the hourly one
 ```
 
 ## Data and licence
 - **Day-ahead prices, DE-LU bidding zone**, from the [Energy-Charts API](https://api.energy-charts.info) (Fraunhofer ISE). The API states the licence as *CC BY 4.0, from Bundesnetzagentur | SMARD.de*.
 - **TSO day-ahead forecasts** (load, solar, wind onshore, wind offshore), Germany, from the Energy-Charts API `public_power_forecast` endpoint. Energy-Charts data are CC BY 4.0 unless stated otherwise, with attribution to Energy-Charts.info.
+- **15-minute day-ahead prices, DE-LU**, 1 Oct 2025 to 30 Oct 2026 (`data/de_lu_qh_price.csv.gz`, 37,924 values, no gaps, about 0.2 MB), same Energy-Charts `price` endpoint and licence, not resampled.
 - The repo ships a small hourly extract (`data/de_lu_hourly.csv.gz`, 1 Jan 2023 to 30 Oct 2026, about 0.7 MB) under the same CC BY 4.0 terms. Source: Energy-Charts.info / Bundesnetzagentur | SMARD.de; values were averaged to hourly. `scripts/fetch_data.py` rebuilds it.
 - Data gap: the solar and onshore-wind day-ahead forecasts for 24 Oct 2026 are empty in the source. They are filled with the previous day's forecast, which is information that was available ex ante.
 
@@ -71,7 +96,7 @@ Code: MIT licence (see `LICENSE`). Data keep their own CC BY 4.0 terms.
 
 ## Limitations
 - **Point forecasts only**, for one bidding zone and one test year. There are no probabilistic forecasts, and no fuel or CO2 price inputs (no free, licence-clear daily TTF/EUA series), so level shifts are learned only from lagged prices.
-- **Hourly resolution.** The auction has been quarter-hourly since 1 Oct 2025, so the whole test year is averaged to hourly. Quarter-hour shape and the extra arbitrage it offers are ignored.
+- **Hourly forecasting models.** The auction has been quarter-hourly since 1 Oct 2025; the models forecast hourly averages. The 15-min extension adds only a historical intra-hour shape on top, not a native 15-min model, and there are only 13 months of 15-min history so far.
 - The LEAR here is a simplified variant: one calibration window, a fixed lag set and AIC penalty selection rather than the multi-window ensemble in the original paper.
 - The importance ranking comes from the last fitted GBM, which saw most of the test period, so it is descriptive rather than strictly out-of-sample.
 - The battery model is a stylised day-ahead-only position: no intraday re-optimisation, balancing or ancillary revenue, grid fees, imbalance cost or degradation feedback, and each day starts empty. The EUR figures are a **backtest on historical prices, not trading performance or a revenue forecast**.
