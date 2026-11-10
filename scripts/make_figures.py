@@ -96,4 +96,36 @@ if (RES / "qh_bess_value.csv").exists():
     ax[2].set_ylim(80, 100); ax[2].set_ylabel("% of 15-min perfect-foresight profit"); ax[2].set_xlabel("battery duration (1 MW)")
     ax[2].set_title("Ensemble forecast, by duration", fontsize=9); ax[2].legend(fontsize=7, loc="upper left")
     fig.tight_layout(); fig.savefig(FIG / "04_quarter_hour_value.png"); plt.close()
+# 5. probabilistic extension (scripts/run_probabilistic.py)
+if (RES / "prob_metrics.csv").exists():
+    pm = pd.read_csv(RES / "prob_metrics.csv"); rel = pd.read_csv(RES / "prob_reliability.csv", index_col=0)
+    ch = pd.read_csv(RES / "prob_coverage80_by_hour.csv", index_col=0)
+    qq = pd.read_csv(RES / "prob_quantiles_qra_cqr.csv.gz", parse_dates=["date"])
+    PC = {"HS-Naive": "#9a9a9a", "HS-Ens": "#4c9a6a", "CP-Ens": "#e07b39", "QRA": "#1f5f8b", "QRA+CQR": "#8b1f5f"}
+    fig = plt.figure(figsize=(14, 7.5)); gs = fig.add_gridspec(2, 3)
+    ax = fig.add_subplot(gs[0, :])
+    wk = (qq.date >= "2026-04-13") & (qq.date < "2026-04-20"); sub = qq[wk]
+    t = pd.date_range("2026-04-13", periods=len(sub), freq="1h")
+    ax.fill_between(t, sub.q05, sub.q95, color="#1f5f8b", alpha=.18, label="QRA+CQR 5-95 %")
+    ax.fill_between(t, sub.q25, sub.q75, color="#1f5f8b", alpha=.35, label="QRA+CQR 25-75 %")
+    ax.plot(t, sub.q50, color="#1f5f8b", lw=1, label="median")
+    ax.plot(t, A.loc["2026-04-13":"2026-04-19"].to_numpy().ravel(), color="k", lw=1.5, label="actual")
+    ax.set_ylabel("EUR/MWh"); ax.legend(ncol=4, fontsize=8)
+    ax.set_title("Ex-ante quantile forecasts (QRA of LEAR + GBM, 56-day window, CQR-recalibrated on 28 days), week of 13 Apr 2026")
+    ax = fig.add_subplot(gs[1, 0])
+    for m in rel.columns:
+        ax.plot(rel.index, rel[m] - rel.index, marker="o", ms=3, color=PC[m], label=m)
+    ax.axhline(0, color="k", lw=.8); ax.set_xlabel("nominal quantile level"); ax.set_ylabel("observed minus nominal frequency")
+    ax.set_title("Reliability (0 = perfectly calibrated)", fontsize=9); ax.legend(fontsize=7)
+    ax = fig.add_subplot(gs[1, 1])
+    for m in ch.columns:
+        ax.plot(ch.index, 100 * ch[m], color=PC[m], label=m)
+    ax.axhline(80, color="k", ls="--", lw=.8); ax.set_xlabel("local hour"); ax.set_ylabel("% of actuals inside")
+    ax.set_title("Coverage of the 80 % interval by hour", fontsize=9); ax.legend(fontsize=7)
+    ax = fig.add_subplot(gs[1, 2]); m56 = pm[pm.window_days == 56]
+    ax.bar(m56.method, m56.pinball, color=[PC[m] for m in m56.method])
+    for i, v in enumerate(m56.pinball):
+        ax.text(i, v + .1, f"{v:.2f}", ha="center", fontsize=8)
+    ax.set_ylabel("mean pinball loss, EUR/MWh (lower is better)"); ax.set_title("Quantile score, 19 levels", fontsize=9)
+    fig.tight_layout(); fig.savefig(FIG / "05_probabilistic.png"); plt.close()
 print("figures written")

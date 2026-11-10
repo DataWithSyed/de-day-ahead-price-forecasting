@@ -5,5 +5,6 @@ cd "$(dirname "$0")/.."
 if [[ "${1:-}" == "--download" ]]; then python scripts/fetch_data.py; fi
 python scripts/run_backtest.py
 python scripts/run_quarterhour.py
+python scripts/run_probabilistic.py
 python scripts/make_figures.py
 python -m pytest -q

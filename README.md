@@ -48,6 +48,35 @@ The hourly-schedule rows here are settled on the actual 15-min prices; they matc
 
 ![quarter-hour value](figures/04_quarter_hour_value.png)
 
+## Extension: probabilistic forecasts (QRA and conformal calibration)
+
+The models above are **point** forecasts. `scripts/run_probabilistic.py` turns them into ex-ante predictive distributions for the same DE-LU day-ahead price, scored on **280 days (24 Jan 2026 to 30 Oct 2026)** after a 56-day warm-up (and a further 28 days of residuals before CQR starts adjusting). Nineteen quantile levels (5 % to 95 %) are produced from information available at D-1 gate closure only.
+
+Methods (all causal):
+- **HS-Naive / HS-Ens** — historical simulation: residuals of the naive or ensemble point forecast over a rolling 56-day window, added to today's point forecast.
+- **CP-Ens** — symmetric split conformal intervals around the ensemble point forecast (Romano, Patterson and Candès 2019 style).
+- **QRA** — quantile regression averaging of LEAR and GBM (Nowotarski and Weron 2015): a rolling 56-day quantile regression of the realised price on the two point forecasts, one model per hour and quantile.
+- **QRA+CQR** — the QRA fan, then conformalized quantile regression (Romano et al. 2019) on a 28-day residual window, which widens or tightens each interval so that past days are covered at the nominal rate. The median is left unchanged.
+
+| Method (56-day window) | Mean pinball | Median MAE | 50 % cov. | 80 % cov. | 90 % cov. | 90 % width | 90 % Winkler | Brier skill (P(price<0) vs climatology) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| HS-Naive | 14.73 | 36.44 | 44.9 % | 71.4 % | 82.2 % | 144.4 | 273.8 | 0.045 |
+| HS-Ens | 5.71 | 14.66 | 44.6 % | 73.2 % | 83.6 % | 52.8 | 103.6 | 0.534 |
+| CP-Ens | 6.05 | 15.67 | 46.5 % | 75.9 % | 88.2 % | 62.5 | 104.8 | **0.572** |
+| QRA | 5.61 | 14.32 | 43.1 % | 71.4 % | 82.0 % | 55.9 | 99.2 | 0.562 |
+| **QRA+CQR** | **5.57** | **14.32** | **49.2 %** | **79.0 %** | **89.1 %** | 65.8 | **95.3** | 0.566 |
+
+Pinball and Winkler are in EUR/MWh (lower is better). Nominal coverage is 50 / 80 / 90 %. Width is the mean 5–95 % interval in EUR/MWh. Brier skill is for the implied probability of a negative price, against a rolling climatology; 450 negative hours fall in the scored window.
+
+**Findings**
+1. **QRA+CQR is the best-calibrated and best-scored fan.** 80 % coverage rises from 71.4 % (raw QRA) to **79.0 %** (nominal 80 %); 50 % coverage from 43.1 % to **49.2 %**. Mean pinball falls from 5.61 to 5.57 (Diebold-Mariano p ≈ 0.0015 vs QRA, 0.009 vs HS-Ens). CQR does this by *widening* the 90 % interval (55.9 → 65.8 EUR/MWh); the 90 % Winkler score still improves (99.2 → 95.3) because misses are penalised less often.
+2. **Historical simulation on the ensemble already beats the naive residual fan by a wide margin** (pinball 5.71 vs 14.73; Brier skill 0.53 vs 0.04). Combining the two point models in QRA is a further, smaller gain.
+3. **A better distribution does not raise battery profit here.** On the same 280 days, a 1 MW / 2 h battery scheduled on the QRA or QRA+CQR *median* earns 74.3 k EUR/MW (97.2 % of perfect foresight 76.4 k), slightly *below* the existing ensemble point forecast at 75.1 k (98.2 %). CQR does not change the median, so it cannot improve this LP. Calibration quality ≠ trading value for a median-driven day-ahead schedule (the same pattern as in the quarter-hour and main backtests: shape and ranking matter more than a well-calibrated fan once the point forecast is already good).
+4. A shorter 28-day residual window over-covers after conformalization (CP-Ens 80 % coverage 80.3 %, 90 % coverage 91.5 %) but has a slightly worse pinball. The 56-day window is the headline setting.
+
+![probabilistic](figures/05_probabilistic.png)
+
+
 ## Problem
 A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET on D-1) needs a 24-hour price forecast for day D. How good can a transparent, open-data model get, and how much of the perfect-foresight arbitrage value does a battery keep when it commits to a schedule based on that forecast?
 
@@ -70,18 +99,19 @@ A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-bash scripts/run_all.sh             # backtest (~7 min on 8 cores), 15-min extension (~1 min), figures, tests
+bash scripts/run_all.sh             # backtest, 15-min extension, probabilistic extension, figures, tests
 bash scripts/run_all.sh --download  # refresh the data extract from the Energy-Charts API first
-python -m pytest -q                 # 24 tests
+python -m pytest -q                 # 30 tests
 ```
-Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`; `qh_*.csv` and `qh_summary.json` for the 15-min extension) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
+Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`; `qh_*.csv` and `qh_summary.json` for the 15-min extension; `prob_*.csv` / `prob_summary.json` for the probabilistic extension) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
 
 ```
 src/dapf/      data.py (API download + cache), features.py (DST-safe panel, holidays, ex-ante designs),
                models.py (naive, LEAR, GBM), evaluate.py (metrics, DM test), bess.py (LP in any time step + backtest),
-               quarterhour.py (15-min DST-safe panel, ex-ante intra-hour shape)
-scripts/       fetch_data.py, run_backtest.py, run_quarterhour.py, make_figures.py, run_all.sh
-tests/         24 pytest tests: DST handling, ex-ante features and shape, holidays, metrics, DM test, LEAR sparsity,
+               quarterhour.py (15-min DST-safe panel, ex-ante intra-hour shape),
+               probabilistic.py (historical simulation, QRA, split conformal, CQR, pinball, Winkler, Brier)
+scripts/       fetch_data.py, run_backtest.py, run_quarterhour.py, run_probabilistic.py, make_figures.py, run_all.sh
+tests/         30 pytest tests: DST handling, ex-ante features and shape, holidays, metrics, DM test, LEAR sparsity,
                LP physics, 15-min LP = hourly LP on flat prices, 15-min extract consistent with the hourly one
 ```
 
@@ -95,7 +125,7 @@ tests/         24 pytest tests: DST handling, ex-ante features and shape, holida
 Code: MIT licence (see `LICENSE`). Data keep their own CC BY 4.0 terms.
 
 ## Limitations
-- **Point forecasts only**, for one bidding zone and one test year. There are no probabilistic forecasts, and no fuel or CO2 price inputs (no free, licence-clear daily TTF/EUA series), so level shifts are learned only from lagged prices.
+- **One bidding zone and one test year.** There are still no fuel or CO2 price inputs (no free, licence-clear daily TTF/EUA series), so level shifts are learned only from lagged prices. Probabilistic fans are now included (QRA + CQR), but they are built on top of the hourly point models, not a native 15-min distributional model.
 - **Hourly forecasting models.** The auction has been quarter-hourly since 1 Oct 2025; the models forecast hourly averages. The 15-min extension adds only a historical intra-hour shape on top, not a native 15-min model, and there are only 13 months of 15-min history so far.
 - The LEAR here is a simplified variant: one calibration window, a fixed lag set and AIC penalty selection rather than the multi-window ensemble in the original paper.
 - The importance ranking comes from the last fitted GBM, which saw most of the test period, so it is descriptive rather than strictly out-of-sample.
@@ -106,3 +136,5 @@ Code: MIT licence (see `LICENSE`). Data keep their own CC BY 4.0 terms.
 - Lago, J., Marcjasz, G., De Schutter, B., Weron, R. (2021). *Forecasting day-ahead electricity prices: A review of state-of-the-art algorithms, best practices and an open-access benchmark.* Applied Energy 293, 116983.
 - Ziel, F., Weron, R. (2018). *Day-ahead electricity price forecasting with high-dimensional structures: Univariate vs. multivariate modeling frameworks.* Energy Economics 70, 396-420.
 - Diebold, F. X., Mariano, R. S. (1995). *Comparing predictive accuracy.* Journal of Business & Economic Statistics 13, 253-263.
+- Nowotarski, J., Weron, R. (2015). *Computing electricity spot price prediction intervals using quantile regression and forecast averaging.* Computational Statistics 30, 791-803. doi:10.1007/s00180-014-0523-0
+- Romano, Y., Patterson, E., Candès, E. J. (2019). *Conformalized quantile regression.* Advances in Neural Information Processing Systems 32.
