@@ -128,4 +128,24 @@ if (RES / "prob_metrics.csv").exists():
         ax.text(i, v + .1, f"{v:.2f}", ha="center", fontsize=8)
     ax.set_ylabel("mean pinball loss, EUR/MWh (lower is better)"); ax.set_title("Quantile score, 19 levels", fontsize=9)
     fig.tight_layout(); fig.savefig(FIG / "05_probabilistic.png"); plt.close()
+# 6. risk-aware (CVaR) schedules from the fans (scripts/run_risk_schedule.py)
+if (RES / "risk_schedule.csv").exists():
+    rs = pd.read_csv(RES / "risk_schedule.csv"); rs["fan"] = rs["fan"].fillna("")
+    FC = {"QRA+CQR fan": "#8b1f5f", "Ens-centred fan": "#4c9a6a"}
+    fig, axs = plt.subplots(1, 3, figsize=(14, 4.2))
+    for ax, bn in zip(axs, ("1h", "2h", "4h")):
+        g = rs[rs.battery == bn]
+        for k, col in FC.items():
+            h = g[g.fan == k]
+            ax.plot(h.realised_cvar10_eur_day, h.eur_per_day, marker="o", color=col, label=f"{k}: lam 0 -> pure CVaR")
+            ax.annotate("lam=0", (h.realised_cvar10_eur_day.iloc[0], h.eur_per_day.iloc[0]), fontsize=7, color=col)
+        for nm, mk in (("Ensemble point", "s"), ("QRA+CQR median", "D")):
+            r = g[g.schedule == nm].iloc[0]
+            ax.scatter(r.realised_cvar10_eur_day, r.eur_per_day, marker=mk, color="k", zorder=5, label=nm)
+        ax.set_xlabel("realised CVaR10 of daily profit, EUR/MW/day (higher = safer)"); ax.set_ylabel("mean profit, EUR/MW/day")
+        ax.set_title(f"1 MW / {bn[0]} MWh, 280 days settled on actual prices", fontsize=9)
+    axs[0].legend(fontsize=7)
+    fig.suptitle("CVaR scheduling on scenario fans: risk weights cost mean profit and do not buy realised tail protection vs the ensemble point schedule "
+                 "(only exception: 4 h, QRA+CQR fan, lam 0.25, CVaR10 +1.4 EUR/day)", fontsize=10)
+    fig.tight_layout(); fig.savefig(FIG / "06_risk_schedule.png"); plt.close()
 print("figures written")

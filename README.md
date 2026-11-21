@@ -76,6 +76,34 @@ Pinball and Winkler are in EUR/MWh (lower is better). Nominal coverage is 50 / 8
 
 ![probabilistic](figures/05_probabilistic.png)
 
+## Extension: risk-aware (CVaR) battery schedules from the fans
+
+Finding 3 above used only the fan's median. `scripts/run_risk_schedule.py` (module `src/dapf/risk.py`) uses the **whole distribution** instead. For each of the same 280 days it builds 56 joint 24-hour price scenarios from the QRA+CQR fan. Each scenario takes the cross-hour rank pattern of one of the previous 56 days' ensemble errors (an empirical copula, Schaake-shuffle style, all ex ante) and maps it through that day's per-hour quantile functions (linear interpolation, with linear tail extrapolation beyond 5/95 %, an ASSUMED tail shape). A CVaR LP (Rockafellar and Uryasev 2000) then picks one fixed day-ahead schedule that maximises `E[profit] + lam * CVaR10(profit)` over the scenarios. lam = 0 is the risk-neutral stochastic schedule, which is the same as the LP on the scenario-mean price. "Pure CVaR" maximises the worst-10 % mean alone. Two scenario sets are tested: the published fan as is, and the fan shifted so its median equals the ensemble point forecast ("Ens-centred"). Battery, LP constraints and settlement on actual prices are the same as above. Uncertainty bands are 7-day moving-block bootstrap 95 % CIs on the daily difference against the ensemble point schedule.
+
+| 1 MW / 2 MWh, 280 days (24 Jan to 30 Oct 2026) | EUR/MW/day | % of perfect | vs ensemble point, EUR/day [95 % CI] | realised CVaR10 of daily profit | worst day | ex-ante VaR10 breached |
+|---|---:|---:|---:|---:|---:|---:|
+| Perfect foresight | 273.0 | 100 % | +4.93 [3.51, 6.31] | 50.1 | 25.9 | - |
+| **Ensemble point (existing)** | **268.1** | **98.2 %** | 0 | **43.8** | 15.4 | - |
+| QRA+CQR median | 265.5 | 97.2 % | -2.63 [-3.75, -1.25] | 43.4 | 6.7 | - |
+| QRA+CQR fan, scenario mean (lam 0) | 266.4 | 97.6 % | -1.69 [-2.96, -0.14] | 43.5 | 8.7 | 13 % |
+| QRA+CQR fan, CVaR lam 1 | 264.0 | 96.7 % | -4.13 [-5.98, -1.61] | 42.2 | 8.3 | 14 % |
+| QRA+CQR fan, pure CVaR | 257.7 | 94.4 % | -10.38 [-13.83, -6.65] | 32.0 | 0.0 | 16 % |
+| Ens-centred fan, scenario mean (lam 0) | 267.5 | 98.0 % | -0.65 [-1.46, 0.51] | 43.3 | 13.4 | 15 % |
+| Ens-centred fan, CVaR lam 1 | 265.0 | 97.1 % | -3.13 [-5.58, -1.03] | 37.1 | 0.0 | 16 % |
+| Ens-centred fan, pure CVaR | 255.4 | 93.5 % | -12.71 [-17.42, -8.11] | 26.7 | 0.0 | 18 % |
+
+The full grid (lam 0, 0.25, 0.5, 1, 2, 5, pure CVaR; 1 h, 2 h and 4 h batteries) is in `results/risk_schedule.csv`, with daily profits in `results/risk_schedule_daily.csv.gz`.
+
+**Findings (mostly negative)**
+1. **No scenario schedule beats the ensemble point schedule** on any battery. The best is the Ens-centred risk-neutral schedule: -0.67 [-1.20, -0.06] EUR/day (1 h), -0.65 [-1.46, +0.51] (2 h, not significant), -1.65 [-2.96, -0.63] (4 h).
+2. **Using the full distribution does help a little relative to the median.** On the published fan, the scenario-mean schedule earns about 0.5 to 0.9 EUR/day more than the QRA+CQR median schedule on every battery: 2 h 266.4 vs 265.5, 4 h 462.5 vs 461.7, 1 h 138.8 vs 138.4. The fan's asymmetry carries some information. It is still not enough to make up the median's accuracy gap to the ensemble.
+3. **Risk aversion costs money and does not buy tail protection.** Each step up in lam lowers mean profit (2 h pure CVaR: -10 to -13 EUR/day, 3.9 to 4.7 k EUR/MW/yr). The *realised* worst-10 %-of-days profit also gets **worse**, not better: 43.8 EUR/day for the ensemble vs 32.0 / 26.7 under pure CVaR. The only exception in the grid is 4 h, published fan, lam 0.25: CVaR10 +1.4 EUR/day, at a cost of -3.5 EUR/day in mean profit. Two reasons. (a) The ensemble schedule already had **zero loss days** in this window, so there is little forecast-error downside left to hedge. The spread of daily profit comes mostly from the market's daily spread level, which a day-ahead-only position cannot hedge. CVaR reacts by trading less on doubtful days (2 h cycles 280 → 271). (b) The joint scenarios are **too narrow in the tail**. The ex-ante 10 % VaR of the chosen schedule is breached on 13 to 20 % of days, and only 74 to 77 % of actual daily mean prices fall inside the scenarios' 10 to 90 % range (nominal 80 %). The per-hour fans are calibrated (79 % coverage), but an empirical copula from 56 days of errors understates joint (whole-day) moves.
+4. Scenario expected profit is slightly optimistic for the published fan. It overstates realised profit by 0.3 to 2.8 EUR/day on average (Ens-centred: -2.5 to +3.5 EUR/day, depending on battery).
+
+Bottom line: for a day-ahead-only arbitrage battery with a good point forecast, a calibrated price fan adds no trading value through CVaR scheduling in this backtest. A risk-aware layer would need better joint (multi-hour) uncertainty, and a revenue stream with real downside (imbalance, intraday re-trading, reserve commitments) to protect.
+
+![risk schedule](figures/06_risk_schedule.png)
+
 
 ## Problem
 A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET on D-1) needs a 24-hour price forecast for day D. How good can a transparent, open-data model get, and how much of the perfect-foresight arbitrage value does a battery keep when it commits to a schedule based on that forecast?
@@ -99,20 +127,22 @@ A battery or a trader bidding into the day-ahead auction (gate closure 12:00 CET
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-bash scripts/run_all.sh             # backtest, 15-min extension, probabilistic extension, figures, tests
+bash scripts/run_all.sh             # backtest, 15-min, probabilistic and CVaR-schedule extensions, figures, tests
 bash scripts/run_all.sh --download  # refresh the data extract from the Energy-Charts API first
-python -m pytest -q                 # 30 tests
+python -m pytest -q                 # 38 tests
 ```
-Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`; `qh_*.csv` and `qh_summary.json` for the 15-min extension; `prob_*.csv` / `prob_summary.json` for the probabilistic extension) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
+Outputs go to `results/` (forecasts per model, metrics, DM p-values, BESS value, error by hour and month, permutation importance, `summary.json`; `qh_*.csv` and `qh_summary.json` for the 15-min extension; `prob_*.csv` / `prob_summary.json` for the probabilistic extension; `risk_schedule*.csv*` / `risk_summary.json` for the CVaR schedules) and `figures/`. A CI workflow example is in `docs/ci_example.yml`.
 
 ```
 src/dapf/      data.py (API download + cache), features.py (DST-safe panel, holidays, ex-ante designs),
                models.py (naive, LEAR, GBM), evaluate.py (metrics, DM test), bess.py (LP in any time step + backtest),
                quarterhour.py (15-min DST-safe panel, ex-ante intra-hour shape),
-               probabilistic.py (historical simulation, QRA, split conformal, CQR, pinball, Winkler, Brier)
-scripts/       fetch_data.py, run_backtest.py, run_quarterhour.py, run_probabilistic.py, make_figures.py, run_all.sh
-tests/         30 pytest tests: DST handling, ex-ante features and shape, holidays, metrics, DM test, LEAR sparsity,
-               LP physics, 15-min LP = hourly LP on flat prices, 15-min extract consistent with the hourly one
+               probabilistic.py (historical simulation, QRA, split conformal, CQR, pinball, Winkler, Brier),
+               risk.py (empirical-copula scenarios from a quantile fan, CVaR schedule LP, VaR/CVaR, block bootstrap)
+scripts/       fetch_data.py, run_backtest.py, run_quarterhour.py, run_probabilistic.py, run_risk_schedule.py, make_figures.py, run_all.sh
+tests/         38 pytest tests: DST handling, ex-ante features and shape, holidays, metrics, DM test, LEAR sparsity,
+               LP physics, 15-min LP = hourly LP on flat prices, 15-min extract consistent with the hourly one,
+               CVaR LP (lam 0 = scenario-mean LP, monotone risk trade-off), copula scenarios, published risk results
 ```
 
 ## Data and licence
@@ -130,6 +160,7 @@ Code: MIT licence (see `LICENSE`). Data keep their own CC BY 4.0 terms.
 - The LEAR here is a simplified variant: one calibration window, a fixed lag set and AIC penalty selection rather than the multi-window ensemble in the original paper.
 - The importance ranking comes from the last fitted GBM, which saw most of the test period, so it is descriptive rather than strictly out-of-sample.
 - The battery model is a stylised day-ahead-only position: no intraday re-optimisation, balancing or ancillary revenue, grid fees, imbalance cost or degradation feedback, and each day starts empty. The EUR figures are a **backtest on historical prices, not trading performance or a revenue forecast**.
+- The CVaR study uses 56 equally weighted scenarios per day from an empirical copula; its joint tails are too narrow (see the VaR breach rates above), so the risk-aware results apply to this scenario generator, not to CVaR scheduling in general.
 - Published forecasts and prices can be revised by the source; re-downloading may change results slightly.
 
 ## References
@@ -138,3 +169,5 @@ Code: MIT licence (see `LICENSE`). Data keep their own CC BY 4.0 terms.
 - Diebold, F. X., Mariano, R. S. (1995). *Comparing predictive accuracy.* Journal of Business & Economic Statistics 13, 253-263.
 - Nowotarski, J., Weron, R. (2015). *Computing electricity spot price prediction intervals using quantile regression and forecast averaging.* Computational Statistics 30, 791-803. doi:10.1007/s00180-014-0523-0
 - Romano, Y., Patterson, E., Candès, E. J. (2019). *Conformalized quantile regression.* Advances in Neural Information Processing Systems 32.
+- Rockafellar, R. T., Uryasev, S. (2000). *Optimization of conditional value-at-risk.* Journal of Risk 2(3), 21-41.
+- Clark, M., Gangopadhyay, S., Hay, L., Rajagopalan, B., Wilby, R. (2004). *The Schaake shuffle: a method for reconstructing space-time variability in forecasted precipitation and temperature fields.* Journal of Hydrometeorology 5, 243-262.

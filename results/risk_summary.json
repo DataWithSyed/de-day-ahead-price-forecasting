@@ -1,0 +1,22 @@
+{
+ "days": 280,
+ "start": "2026-01-24",
+ "end": "2026-10-30",
+ "copula_window": 56,
+ "alpha": 0.1,
+ "lams": [
+  0.0,
+  0.25,
+  0.5,
+  1.0,
+  2.0,
+  5.0,
+  null
+ ],
+ "scenarios_per_day": 56,
+ "daily_mean_in_scenario_10_90": {
+  "QRA+CQR fan": 0.7678571428571429,
+  "Ens-centred fan": 0.7357142857142858
+ },
+ "runtime_s": 44.246416330337524
+}
